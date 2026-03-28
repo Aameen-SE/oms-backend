@@ -4,6 +4,19 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+# Logs
+*.log
+
+# Env
+.env
+
+# Compiled files
+*.class
+
+# OS files
+.DS_Store
+Thumbs.db
+
 ### STS ###
 .apt_generated
 .classpath
