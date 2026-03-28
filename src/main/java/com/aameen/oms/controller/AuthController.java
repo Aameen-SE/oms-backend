@@ -1,0 +1,27 @@
+package com.aameen.oms.controller;
+
+import com.aameen.oms.dto.AuthResponse;
+import com.aameen.oms.dto.LoginRequest;
+import com.aameen.oms.dto.RegisterRequest;
+import com.aameen.oms.service.AuthService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.*;
+
+@RestController
+@RequestMapping("/api/v1/auth")
+@RequiredArgsConstructor
+public class AuthController {
+
+    private final AuthService authService;
+
+    @PostMapping("/register")
+    public AuthResponse register(@RequestBody RegisterRequest request) {
+        return authService.register(request);
+    }
+
+    @PostMapping("/login")
+    public AuthResponse login(@RequestBody LoginRequest request) {
+        return authService.login(request);
+    }
+
+}
