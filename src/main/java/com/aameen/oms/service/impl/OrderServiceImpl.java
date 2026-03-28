@@ -3,6 +3,8 @@ package com.aameen.oms.service.impl;
 import com.aameen.oms.dto.OrderDTO;
 import com.aameen.oms.dto.OrderItemDTO;
 import com.aameen.oms.entity.*;
+import com.aameen.oms.exception.BadRequestException;
+import com.aameen.oms.exception.ResourceNotFoundException;
 import com.aameen.oms.repository.CartRepository;
 import com.aameen.oms.repository.OrderRepository;
 import com.aameen.oms.repository.UserRepository;
@@ -42,10 +44,10 @@ public class OrderServiceImpl implements OrderService {
         User user = getCurrentUser();
 
         Cart cart = cartRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("Cart not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
 
         if (cart.getItems().isEmpty()) {
-            throw new RuntimeException("Cart is empty");
+            throw new BadRequestException("Cart is empty");
         }
 
         Order order = new Order();
@@ -55,11 +57,25 @@ public class OrderServiceImpl implements OrderService {
 
         List<OrderItem> orderItems = cart.getItems().stream().map(cartItem -> {
 
+            Product product = cartItem.getProduct();
+
+            // 🔥 Check stock
+            if (product.getStockQuantity() < cartItem.getQuantity()) {
+                throw new BadRequestException(
+                        "Insufficient stock for product: " + product.getName()
+                );
+            }
+
+            // 🔥 Reduce stock
+            product.setStockQuantity(
+                    product.getStockQuantity() - cartItem.getQuantity()
+            );
+
             OrderItem item = new OrderItem();
             item.setOrder(order);
-            item.setProduct(cartItem.getProduct());
+            item.setProduct(product);
             item.setQuantity(cartItem.getQuantity());
-            item.setPrice(cartItem.getProduct().getPrice());
+            item.setPrice(product.getPrice());
 
             return item;
 
@@ -75,7 +91,7 @@ public class OrderServiceImpl implements OrderService {
 
         Order savedOrder = orderRepository.save(order);
 
-        // Clear cart after order placed
+
         cart.getItems().clear();
         cartRepository.save(cart);
 
@@ -96,8 +112,14 @@ public class OrderServiceImpl implements OrderService {
     @Override
     public OrderDTO getOrderById(Long id) {
 
+        User user = getCurrentUser();
+
         Order order = orderRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
+
+        if (!order.getUser().getId().equals(user.getId())) {
+            throw new BadRequestException("You are not allowed to view this order");
+        }
 
         return mapToDTO(order);
     }

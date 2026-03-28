@@ -3,6 +3,8 @@ package com.aameen.oms.service.impl;
 import com.aameen.oms.dto.*;
 import com.aameen.oms.entity.Role;
 import com.aameen.oms.entity.User;
+import com.aameen.oms.exception.BadRequestException;
+import com.aameen.oms.exception.ResourceNotFoundException;
 import com.aameen.oms.repository.UserRepository;
 import com.aameen.oms.security.JwtService;
 import com.aameen.oms.service.AuthService;
@@ -28,7 +30,7 @@ public class AuthServiceImpl implements AuthService {
     public AuthResponse register(RegisterRequest request) {
 
         if (userRepository.existsByEmail(request.getEmail())) {
-            throw new RuntimeException("Email already registered");
+            throw new BadRequestException("Email already registered");
         }
 
         User user = User.builder()
@@ -57,7 +59,7 @@ public class AuthServiceImpl implements AuthService {
         );
 
         User user = userRepository.findByEmail(request.getEmail())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         String token = jwtService.generateToken(user.getEmail());
 

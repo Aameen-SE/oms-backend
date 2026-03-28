@@ -4,6 +4,8 @@ import com.aameen.oms.dto.OrderDTO;
 import com.aameen.oms.dto.OrderItemDTO;
 import com.aameen.oms.entity.Order;
 import com.aameen.oms.entity.OrderStatus;
+import com.aameen.oms.exception.BadRequestException;
+import com.aameen.oms.exception.ResourceNotFoundException;
 import com.aameen.oms.repository.OrderRepository;
 import com.aameen.oms.service.AdminService;
 import lombok.RequiredArgsConstructor;
@@ -33,9 +35,13 @@ public class AdminServiceImpl implements AdminService {
     public OrderDTO updateOrderStatus(Long orderId, String status) {
 
         Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
-        order.setStatus(OrderStatus.valueOf(status));
+        try {
+            order.setStatus(OrderStatus.valueOf(status.toUpperCase()));
+        } catch (IllegalArgumentException e) {
+            throw new BadRequestException("Invalid order status: " + status);
+        }
 
         Order updated = orderRepository.save(order);
 

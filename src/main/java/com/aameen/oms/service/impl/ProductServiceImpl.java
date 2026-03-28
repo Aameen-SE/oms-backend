@@ -2,6 +2,7 @@ package com.aameen.oms.service.impl;
 
 import com.aameen.oms.dto.ProductDTO;
 import com.aameen.oms.entity.Product;
+import com.aameen.oms.exception.ResourceNotFoundException;
 import com.aameen.oms.repository.ProductRepository;
 import com.aameen.oms.service.ProductService;
 import lombok.RequiredArgsConstructor;
@@ -44,7 +45,7 @@ public class ProductServiceImpl implements ProductService {
     public ProductDTO getProductById(Long id) {
 
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
         return mapToDTO(product);
     }
@@ -53,7 +54,7 @@ public class ProductServiceImpl implements ProductService {
     public ProductDTO updateProduct(Long id, ProductDTO dto) {
 
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found"));
 
         product.setName(dto.getName());
         product.setDescription(dto.getDescription());
@@ -68,7 +69,10 @@ public class ProductServiceImpl implements ProductService {
     @Override
     public void deleteProduct(Long id) {
 
-        productRepository.deleteById(id);
+        Product product = productRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id " + id));
+
+        productRepository.delete(product);
     }
 
     private ProductDTO mapToDTO(Product product) {

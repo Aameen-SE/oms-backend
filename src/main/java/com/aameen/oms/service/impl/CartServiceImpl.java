@@ -6,6 +6,8 @@ import com.aameen.oms.entity.Cart;
 import com.aameen.oms.entity.CartItem;
 import com.aameen.oms.entity.Product;
 import com.aameen.oms.entity.User;
+import com.aameen.oms.exception.BadRequestException;
+import com.aameen.oms.exception.ResourceNotFoundException;
 import com.aameen.oms.repository.CartRepository;
 import com.aameen.oms.repository.ProductRepository;
 import com.aameen.oms.repository.UserRepository;
@@ -32,11 +34,16 @@ public class CartServiceImpl implements CartService {
                 .getName();
 
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
+
 
     @Override
     public CartDTO addToCart(Long productId, Integer quantity) {
+
+        if (quantity == null || quantity < 1) {
+            throw new BadRequestException("Quantity must be at least 1");
+        }
 
         User user = getCurrentUser();
 
@@ -49,14 +56,24 @@ public class CartServiceImpl implements CartService {
                 });
 
         Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Product not found with id " + productId));
 
-        CartItem item = new CartItem();
-        item.setCart(cart);
-        item.setProduct(product);
-        item.setQuantity(quantity);
 
-        cart.getItems().add(item);
+        CartItem existingItem = cart.getItems().stream()
+                .filter(item -> item.getProduct().getId().equals(productId))
+                .findFirst()
+                .orElse(null);
+
+        if (existingItem != null) {
+
+            existingItem.setQuantity(existingItem.getQuantity() + quantity);
+        } else {
+            CartItem item = new CartItem();
+            item.setCart(cart);
+            item.setProduct(product);
+            item.setQuantity(quantity);
+            cart.getItems().add(item);
+        }
 
         cartRepository.save(cart);
 
@@ -69,7 +86,7 @@ public class CartServiceImpl implements CartService {
         User user = getCurrentUser();
 
         Cart cart = cartRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("Cart not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
 
         return mapToDTO(cart);
     }
@@ -80,15 +97,18 @@ public class CartServiceImpl implements CartService {
         User user = getCurrentUser();
 
         Cart cart = cartRepository.findByUser(user)
-                .orElseThrow(() -> new RuntimeException("Cart not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Cart not found"));
 
-        cart.getItems().removeIf(item ->
+        boolean removed = cart.getItems().removeIf(item ->
                 item.getProduct().getId().equals(productId)
         );
 
+        if (!removed) {
+            throw new ResourceNotFoundException("Product not found in cart");
+        }
+
         cartRepository.save(cart);
     }
-
     private CartDTO mapToDTO(Cart cart) {
 
         CartDTO dto = new CartDTO();

@@ -1,8 +1,10 @@
 package com.aameen.oms.controller;
 
+import com.aameen.oms.dto.ApiResponse;
 import com.aameen.oms.dto.ProductDTO;
 import com.aameen.oms.service.ProductService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,34 +18,68 @@ import java.util.List;
 public class ProductController {
 
     private final ProductService productService;
-
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ProductDTO createProduct(@RequestBody ProductDTO dto) {
-        return productService.createProduct(dto);
+    public ApiResponse<ProductDTO> createProduct(@Valid @RequestBody ProductDTO dto) {
+
+        ProductDTO product = productService.createProduct(dto);
+
+        return ApiResponse.<ProductDTO>builder()
+                .success(true)
+                .message("Product created successfully")
+                .data(product)
+                .build();
     }
 
     @GetMapping
-    public List<ProductDTO> getAllProducts() {
-        return productService.getAllProducts();
+    public ApiResponse<List<ProductDTO>> getAllProducts() {
+
+        List<ProductDTO> products = productService.getAllProducts();
+
+        return ApiResponse.<List<ProductDTO>>builder()
+                .success(true)
+                .message("Products fetched successfully")
+                .data(products)
+                .build();
     }
 
     @GetMapping("/{id}")
-    public ProductDTO getProductById(@PathVariable Long id) {
-        return productService.getProductById(id);
+    public ApiResponse<ProductDTO> getProductById(@PathVariable Long id) {
+
+        ProductDTO product = productService.getProductById(id);
+
+        return ApiResponse.<ProductDTO>builder()
+                .success(true)
+                .message("Product fetched successfully")
+                .data(product)
+                .build();
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}")
-    public ProductDTO updateProduct(@PathVariable Long id,
-                                    @RequestBody ProductDTO dto) {
-        return productService.updateProduct(id, dto);
+    public ApiResponse<ProductDTO> updateProduct(@PathVariable Long id,
+                                                 @Valid @RequestBody ProductDTO dto) {
+
+        ProductDTO updated = productService.updateProduct(id, dto);
+
+        return ApiResponse.<ProductDTO>builder()
+                .success(true)
+                .message("Product updated successfully")
+                .data(updated)
+                .build();
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/{id}")
-    public void deleteProduct(@PathVariable Long id) {
+    public ApiResponse<Object> deleteProduct(@PathVariable Long id) {
+
         productService.deleteProduct(id);
+
+        return ApiResponse.builder()
+                .success(true)
+                .message("Product deleted successfully")
+                .data(null)
+                .build();
     }
 
 }
